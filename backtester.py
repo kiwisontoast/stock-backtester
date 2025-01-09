@@ -95,48 +95,53 @@ class StockBacktestApp:
         self.results_text.grid(row=7, column=0, columnspan=4, padx=10, pady=10)
 
     def run_backtest(self):
-        start_date = self.start_date.get_date()
-        end_date = self.end_date.get_date()
-        stocks = [s.strip() for s in self.stock_entry.get().split(',')]
-        baseline_stock = self.baseline_entry.get().strip()
-        allocation_type = self.allocation_type.get()
-        allocations = [float(a.strip()) for a in self.allocation_entry.get().split(',')]
-
-        if allocation_type == "percentage" and sum(allocations) != 100:
-            messagebox.showerror("Error", "Percentage allocations must sum to 100%")
-            return
-
         try:
-            # Fetch stock data
+            start_date = self.start_date.get_date()
+            end_date = self.end_date.get_date()
+            stocks = [s.strip() for s in self.stock_entry.get().split(',')]
+            baseline_stock = self.baseline_entry.get().strip()
+            allocation_type = self.allocation_type.get()
+            allocations = [float(a.strip()) for a in self.allocation_entry.get().split(',')]
+
+            # Verify input data lengths match
+            if len(stocks) != len(allocations):
+                messagebox.showerror("Error", "Number of stocks must match number of allocations")
+                return
+
+            # Fetch stock data first
             portfolio_data = yf.download(stocks + [baseline_stock], start=start_date, end=end_date, auto_adjust=False)
             
             # Use 'Close' for calculations, but keep 'Adj Close' for total return
             close_data = portfolio_data['Close']
             adj_close_data = portfolio_data['Adj Close']
 
-            # Calculate weights for both allocation types
+            # Calculate portfolio value and weights
             if allocation_type == "percentage":
+                if sum(allocations) != 100:
+                    messagebox.showerror("Error", "Percentage allocations must sum to 100%")
+                    return
                 weights = [a / 100 for a in allocations]
+                portfolio_value = pd.Series(0, index=close_data.index)
+                for stock, weight in zip(stocks, weights):
+                    portfolio_value += close_data[stock] * weight
             else:  # dollar amount
-                initial_values = [a for a in allocations]
-                total_investment = sum(initial_values)
-                weights = [a / total_investment for a in initial_values]
+                total_investment = sum(allocations)
+                weights = [a / total_investment for a in allocations]
+                portfolio_value = pd.Series(0, index=close_data.index)
+                for stock, allocation in zip(stocks, allocations):
+                    shares = allocation / close_data[stock].iloc[0]
+                    portfolio_value += close_data[stock] * shares
 
-            # Calculate portfolio value
-            if allocation_type == "percentage":
-                portfolio_value = (close_data[stocks] * weights).sum(axis=1)
-            else:
-                shares = [a / close_data[stock].iloc[0] for a, stock in zip(allocations, stocks)]
-                portfolio_value = (close_data[stocks] * shares).sum(axis=1)
-
-            # Calculate total returns using the defined weights
-            portfolio_return = (adj_close_data[stocks].iloc[-1] / adj_close_data[stocks].iloc[0] - 1).dot(weights) * 100
+            # Calculate returns
+            portfolio_return = sum((adj_close_data[stock].iloc[-1] / adj_close_data[stock].iloc[0] - 1) * weight 
+                                for stock, weight in zip(stocks, weights)) * 100
             baseline_return = (adj_close_data[baseline_stock].iloc[-1] / adj_close_data[baseline_stock].iloc[0] - 1) * 100
 
             # Plot results
             self.ax.clear()
-            self.ax.plot(close_data.index, portfolio_value / portfolio_value.iloc[0], label='Portfolio')
-            self.ax.plot(close_data.index, close_data[baseline_stock] / close_data[baseline_stock].iloc[0], label=baseline_stock)
+            self.ax.plot(portfolio_value.index, portfolio_value / portfolio_value.iloc[0], label='Portfolio')
+            self.ax.plot(close_data.index, close_data[baseline_stock] / close_data[baseline_stock].iloc[0], 
+                        label=baseline_stock)
             self.ax.set_title('Portfolio Performance vs Baseline')
             self.ax.set_xlabel('Date')
             self.ax.set_ylabel('Normalized Value')
@@ -150,6 +155,7 @@ class StockBacktestApp:
 
         except Exception as e:
             messagebox.showerror("Error", str(e))
+
 
 
 
