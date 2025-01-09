@@ -121,14 +121,7 @@ class StockBacktestApp:
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.master)
         self.canvas_widget = self.canvas.get_tk_widget()
         self.canvas_widget.grid(row=6, column=0, columnspan=4, padx=10, pady=10)
-<<<<<<< HEAD
         self.canvas.callbacks.connect('resize_event', self.on_resize)
-=======
-
-        # Make the canvas resize with the window
-        self.canvas.callbacks.connect('resize_event', self.on_resize)
-
->>>>>>> 92acd6fb6e90fbd3808c6af386e31c3d0707b530
         self.results_text = tk.Text(self.master, height=5, width=80)
         self.results_text.grid(row=7, column=0, columnspan=4, padx=10, pady=10)
 
@@ -205,7 +198,6 @@ class StockBacktestApp:
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
-<<<<<<< HEAD
     def on_resize(self, event):
         # Update the figure size when the window is resized
         self.fig.set_size_inches(event.width/self.fig.dpi, event.height/self.fig.dpi)
@@ -215,18 +207,6 @@ class StockBacktestApp:
         # Force a redraw of the graph
         self.canvas.draw()
         self.master.update_idletasks()
-=======
-
-
-
-def __init__(self, master):
-    self.master = master
-    self.master.title("Stock Portfolio Backtesting App")
-    self.master.geometry("800x600")
-
-    sv_ttk.set_theme("light")  # Initialize with light theme
-    self.create_widgets()
->>>>>>> 92acd6fb6e90fbd3808c6af386e31c3d0707b530
 
 if __name__ == "__main__":
     root = tk.Tk()
