@@ -5,6 +5,7 @@ import yfinance as yf
 import pandas as pd
 import matplotlib.pyplot as plt
 import sv_ttk
+import sys
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class StockBacktestApp:
@@ -93,13 +94,23 @@ class StockBacktestApp:
         ttk.Button(self.master, text="Run Backtest", command=self.run_backtest).grid(row=5, column=0, columnspan=4, pady=10)
 
         # Results area
+        graph_frame = ttk.Frame(self.master)
+        graph_frame.grid(row=6, column=0, columnspan=4, padx=10, pady=10, sticky='nsew')
+        graph_frame.grid_rowconfigure(0, weight=1)
+        graph_frame.grid_columnconfigure(0, weight=1)
+
         self.fig, self.ax = plt.subplots(figsize=(8, 4))
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.master)
         self.canvas_widget = self.canvas.get_tk_widget()
         self.canvas_widget.grid(row=6, column=0, columnspan=4, padx=10, pady=10)
 
+        # Make the canvas resize with the window
+        self.canvas.callbacks.connect('resize_event', self.on_resize)
+
         self.results_text = tk.Text(self.master, height=5, width=80)
         self.results_text.grid(row=7, column=0, columnspan=4, padx=10, pady=10)
+
+
 
     def run_backtest(self):
         try:
@@ -163,8 +174,29 @@ class StockBacktestApp:
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
+
+
+
+def __init__(self, master):
+    self.master = master
+    self.master.title("Stock Portfolio Backtesting App")
+    self.master.geometry("800x600")
+
+    sv_ttk.set_theme("light")  # Initialize with light theme
+    self.create_widgets()
+
 if __name__ == "__main__":
     root = tk.Tk()
     app = StockBacktestApp(root)
-    root.mainloop()
 
+    # Configure the main window to be resizable
+    root.protocol("WM_DELETE_WINDOW", app.on_closing)
+    root.update_idletasks()
+    
+    # Make sure window is resizable
+    root.resizable(True, True)
+    
+    # Set minimum window size
+    root.minsize(800, 600)
+
+    root.mainloop()
