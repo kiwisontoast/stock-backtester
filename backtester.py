@@ -5,17 +5,32 @@ import yfinance as yf
 import pandas as pd
 import matplotlib.pyplot as plt
 import sv_ttk
+import sys
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class StockBacktestApp:
     def __init__(self, master):
         self.master = master
         self.master.title("Stock Portfolio Backtesting App")
-        self.master.geometry("800x600")
-        # Add the protocol handler here
+        self.master.geometry("800x1000")
+        
+        # Configure grid weights for proper scaling
+        self.master.grid_rowconfigure(6, weight=1)
+        self.master.grid_columnconfigure(0, weight=1)
+        self.master.grid_columnconfigure(1, weight=1)
+        self.master.grid_columnconfigure(2, weight=1)
+        self.master.grid_columnconfigure(3, weight=1)
+        
+        # Add padding to the main window
+        self.master.configure(padx=10, pady=10)
+        
+        # Set minimum window size
+        self.master.minsize(800, 1000)
+        
         self.master.protocol("WM_DELETE_WINDOW", self.on_closing)
-        sv_ttk.set_theme("light")  # Initialize with light theme
+        sv_ttk.set_theme("light")
         self.create_widgets()
+
 
     def on_closing(self):
         plt.close('all')  # Close all matplotlib figures
@@ -49,6 +64,10 @@ class StockBacktestApp:
     def create_widgets(self):
         # Date selection
         ttk.Label(self.master, text="Start Date:").grid(row=0, column=0, padx=5, pady=5)
+        graph_frame = ttk.Frame(self.master)
+        graph_frame.grid(row=6, column=0, columnspan=4, padx=10, pady=10, sticky='nsew')
+        graph_frame.grid_rowconfigure(0, weight=1)
+        graph_frame.grid_columnconfigure(0, weight=1)
         self.start_date = DateEntry(self.master, width=12, background='darkblue', foreground='white', borderwidth=2)
         self.start_date.grid(row=0, column=1, padx=5, pady=5)
 
@@ -97,18 +116,27 @@ class StockBacktestApp:
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.master)
         self.canvas_widget = self.canvas.get_tk_widget()
         self.canvas_widget.grid(row=6, column=0, columnspan=4, padx=10, pady=10)
-
+        self.canvas.callbacks.connect('resize_event', self.on_resize)
         self.results_text = tk.Text(self.master, height=5, width=80)
         self.results_text.grid(row=7, column=0, columnspan=4, padx=10, pady=10)
 
     def run_backtest(self):
         try:
+            # Initialize weights at the start
+            weights = []
+            
             start_date = self.start_date.get_date()
             end_date = self.end_date.get_date()
             stocks = [s.strip() for s in self.stock_entry.get().split(',')]
             baseline_stock = self.baseline_entry.get().strip()
             allocation_type = self.allocation_type.get()
             allocations = [float(a.strip()) for a in self.allocation_entry.get().split(',')]
+
+            # Verify data is downloaded successfully
+            portfolio_data = yf.download(stocks + [baseline_stock], start=start_date, end=end_date, auto_adjust=False)
+            if portfolio_data.empty:
+                messagebox.showerror("Error", "No data available for the selected stocks and date range")
+                return
 
             # Verify input data lengths match
             if len(stocks) != len(allocations):
@@ -162,6 +190,16 @@ class StockBacktestApp:
 
         except Exception as e:
             messagebox.showerror("Error", str(e))
+
+    def on_resize(self, event):
+        # Update the figure size when the window is resized
+        self.fig.set_size_inches(event.width/self.fig.dpi, event.height/self.fig.dpi)
+        self.canvas.draw()
+
+    def update_graph(self):
+        # Force a redraw of the graph
+        self.canvas.draw()
+        self.master.update_idletasks()
 
 if __name__ == "__main__":
     root = tk.Tk()
