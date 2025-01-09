@@ -12,9 +12,16 @@ class StockBacktestApp:
         self.master = master
         self.master.title("Stock Portfolio Backtesting App")
         self.master.geometry("800x600")
-
+        # Add the protocol handler here
+        self.master.protocol("WM_DELETE_WINDOW", self.on_closing)
+        sv_ttk.set_theme("light")  # Initialize with light theme
         self.create_widgets()
 
+    def on_closing(self):
+        plt.close('all')  # Close all matplotlib figures
+        self.master.quit()  # Stop the mainloop
+        self.master.destroy()  # Destroy the window
+        
     def toggle_theme(self):
         new_theme = self.theme_var.get()
         sv_ttk.set_theme(new_theme)
@@ -156,18 +163,8 @@ class StockBacktestApp:
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
-
-
-
-def __init__(self, master):
-    self.master = master
-    self.master.title("Stock Portfolio Backtesting App")
-    self.master.geometry("800x600")
-
-    sv_ttk.set_theme("light")  # Initialize with light theme
-    self.create_widgets()
-
 if __name__ == "__main__":
     root = tk.Tk()
     app = StockBacktestApp(root)
     root.mainloop()
+
