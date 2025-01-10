@@ -28,9 +28,19 @@ class StockBacktestApp:
         self.master.minsize(800, 1000)
         
         self.master.protocol("WM_DELETE_WINDOW", self.on_closing)
-        sv_ttk.set_theme("light")
+        sv_ttk.set_theme("dark")
         self.create_widgets()
+        self.update_graph_colors() 
 
+    def update_graph_colors(self):
+        if self.theme_var.get() == "dark":
+            self.fig.patch.set_facecolor('#2d2d2d')
+            self.ax.set_facecolor('#2d2d2d')
+            self.ax.tick_params(colors='white')
+            self.ax.xaxis.label.set_color('white')
+            self.ax.yaxis.label.set_color('white')
+            self.ax.title.set_color('white')
+        self.canvas.draw()
 
     def on_closing(self):
         plt.close('all')  # Close all matplotlib figures
@@ -81,7 +91,7 @@ class StockBacktestApp:
         self.stock_entry.grid(row=1, column=2, columnspan=2, padx=5, pady=5)
 
         # Theme toggle switch
-        self.theme_var = tk.StringVar(value="light")
+        self.theme_var = tk.StringVar(value="dark")
         self.theme_switch = ttk.Checkbutton(
             self.master,
             text="Dark Mode",
