@@ -4,33 +4,38 @@ from tkcalendar import DateEntry
 import yfinance as yf
 import pandas as pd
 import matplotlib.pyplot as plt
+from datetime import datetime
 import sv_ttk
 import sys
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
 
 class StockBacktestApp:
     def __init__(self, master):
         self.master = master
         self.master.title("Stock Portfolio Backtesting App")
         self.master.geometry("800x1000")
-        
+
+        # Add configuration storage
+        self.current_config = {}
+
         # Configure grid weights for proper scaling
         self.master.grid_rowconfigure(6, weight=1)
         self.master.grid_columnconfigure(0, weight=1)
         self.master.grid_columnconfigure(1, weight=1)
         self.master.grid_columnconfigure(2, weight=1)
         self.master.grid_columnconfigure(3, weight=1)
-        
+
         # Add padding to the main window
         self.master.configure(padx=10, pady=10)
-        
+
         # Set minimum window size
         self.master.minsize(800, 1000)
-        
+
         self.master.protocol("WM_DELETE_WINDOW", self.on_closing)
         sv_ttk.set_theme("dark")
         self.create_widgets()
-        self.update_graph_colors() 
+        self.update_graph_colors()
 
     def update_graph_colors(self):
         if self.theme_var.get() == "dark":
@@ -46,11 +51,11 @@ class StockBacktestApp:
         plt.close('all')  # Close all matplotlib figures
         self.master.quit()  # Stop the mainloop
         self.master.destroy()  # Destroy the window
-        
+
     def toggle_theme(self):
         new_theme = self.theme_var.get()
         sv_ttk.set_theme(new_theme)
-        
+
         # Update plot colors
         if new_theme == "dark":
             self.fig.patch.set_facecolor('#2d2d2d')
@@ -66,27 +71,31 @@ class StockBacktestApp:
             self.ax.xaxis.label.set_color('black')
             self.ax.yaxis.label.set_color('black')
             self.ax.title.set_color('black')
-        
+
         self.canvas.draw()
-
-
 
     def create_widgets(self):
         # Date selection
-        ttk.Label(self.master, text="Start Date:").grid(row=0, column=0, padx=5, pady=5)
+        ttk.Label(self.master, text="Start Date:").grid(
+            row=0, column=0, padx=5, pady=5)
         graph_frame = ttk.Frame(self.master)
-        graph_frame.grid(row=6, column=0, columnspan=4, padx=10, pady=10, sticky='nsew')
+        graph_frame.grid(row=6, column=0, columnspan=4,
+                         padx=10, pady=10, sticky='nsew')
         graph_frame.grid_rowconfigure(0, weight=1)
         graph_frame.grid_columnconfigure(0, weight=1)
-        self.start_date = DateEntry(self.master, width=12, background='darkblue', foreground='white', borderwidth=2)
+        self.start_date = DateEntry(
+            self.master, width=12, background='darkblue', foreground='white', borderwidth=2)
         self.start_date.grid(row=0, column=1, padx=5, pady=5)
 
-        ttk.Label(self.master, text="End Date:").grid(row=0, column=2, padx=5, pady=5)
-        self.end_date = DateEntry(self.master, width=12, background='darkblue', foreground='white', borderwidth=2)
+        ttk.Label(self.master, text="End Date:").grid(
+            row=0, column=2, padx=5, pady=5)
+        self.end_date = DateEntry(
+            self.master, width=12, background='darkblue', foreground='white', borderwidth=2)
         self.end_date.grid(row=0, column=3, padx=5, pady=5)
 
         # Stock input
-        ttk.Label(self.master, text="Stock Tickers (comma-separated):").grid(row=1, column=0, columnspan=2, padx=5, pady=5)
+        ttk.Label(self.master, text="Stock Tickers (comma-separated):").grid(row=1,
+                                                                             column=0, columnspan=2, padx=5, pady=5)
         self.stock_entry = ttk.Entry(self.master, width=30)
         self.stock_entry.grid(row=1, column=2, columnspan=2, padx=5, pady=5)
 
@@ -105,64 +114,142 @@ class StockBacktestApp:
 
         # Allocation type
         self.allocation_type = tk.StringVar(value="percentage")
-        ttk.Radiobutton(self.master, text="Percentage", variable=self.allocation_type, value="percentage").grid(row=2, column=0, padx=5, pady=5)
-        ttk.Radiobutton(self.master, text="Dollar Amount", variable=self.allocation_type, value="dollar").grid(row=2, column=1, padx=5, pady=5)
+        ttk.Radiobutton(self.master, text="Percentage", variable=self.allocation_type,
+                        value="percentage").grid(row=2, column=0, padx=5, pady=5)
+        ttk.Radiobutton(self.master, text="Dollar Amount", variable=self.allocation_type,
+                        value="dollar").grid(row=2, column=1, padx=5, pady=5)
 
         # Allocation input
-        ttk.Label(self.master, text="Allocations:").grid(row=3, column=0, padx=5, pady=5)
+        ttk.Label(self.master, text="Allocations:").grid(
+            row=3, column=0, padx=5, pady=5)
         self.allocation_entry = ttk.Entry(self.master, width=30)
-        self.allocation_entry.grid(row=3, column=1, columnspan=2, padx=5, pady=5)
+        self.allocation_entry.grid(
+            row=3, column=1, columnspan=2, padx=5, pady=5)
 
         # Baseline stock
-        ttk.Label(self.master, text="Baseline Stock:").grid(row=4, column=0, padx=5, pady=5)
+        ttk.Label(self.master, text="Baseline Stock:").grid(
+            row=4, column=0, padx=5, pady=5)
         self.baseline_entry = ttk.Entry(self.master, width=10)
         self.baseline_entry.grid(row=4, column=1, padx=5, pady=5)
 
-        # Run button
-        ttk.Button(self.master, text="Run Backtest", command=self.run_backtest).grid(row=5, column=0, columnspan=4, pady=10)
+        # Add Save/Load buttons
+        button_frame = ttk.Frame(self.master)
+        button_frame.grid(row=5, column=0, columnspan=4, pady=5)
+
+        ttk.Button(button_frame, text="Save Configuration",
+                   command=self.save_backtest_config).grid(row=0, column=0, padx=5)
+        ttk.Button(button_frame, text="Load Configuration",
+                   command=self.load_backtest_config).grid(row=0, column=1, padx=5)
+        ttk.Button(button_frame, text="Run Backtest",
+                   command=self.run_backtest).grid(row=0, column=2, padx=5)
 
         # Results area
         graph_frame = ttk.Frame(self.master)
-        graph_frame.grid(row=6, column=0, columnspan=4, padx=10, pady=10, sticky='nsew')
+        graph_frame.grid(row=6, column=0, columnspan=4,
+                         padx=10, pady=10, sticky='nsew')
         graph_frame.grid_rowconfigure(0, weight=1)
         graph_frame.grid_columnconfigure(0, weight=1)
 
         self.fig, self.ax = plt.subplots(figsize=(8, 4))
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.master)
         self.canvas_widget = self.canvas.get_tk_widget()
-        self.canvas_widget.grid(row=6, column=0, columnspan=4, padx=10, pady=10)
+        self.canvas_widget.grid(
+            row=6, column=0, columnspan=4, padx=10, pady=10)
         self.canvas.callbacks.connect('resize_event', self.on_resize)
         self.results_text = tk.Text(self.master, height=5, width=80)
         self.results_text.grid(row=7, column=0, columnspan=4, padx=10, pady=10)
 
+    def save_backtest_config(self):
+        try:
+            config = {
+                'stocks': self.stock_entry.get(),
+                'allocations': self.allocation_entry.get(),
+                'allocation_type': self.allocation_type.get(),
+                'baseline': self.baseline_entry.get(),
+                'start_date': self.start_date.get_date().strftime('%Y-%m-%d'),
+                'end_date': self.end_date.get_date().strftime('%Y-%m-%d')
+            }
 
+            with open('backtest_config.txt', 'w') as file:
+                for key, value in config.items():
+                    file.write(f"{key}:{value}\n")
+
+            messagebox.showinfo("Success", "Configuration saved successfully!")
+        except Exception as e:
+            messagebox.showerror(
+                "Error", f"Failed to save configuration: {str(e)}")
+
+    def load_backtest_config(self):
+        try:
+            config = {}
+            with open('backtest_config.txt', 'r') as file:
+                for line in file:
+                    key, value = line.strip().split(':', 1)
+                    config[key] = value
+
+            # Update UI elements with loaded values
+            self.stock_entry.delete(0, tk.END)
+            self.stock_entry.insert(0, config.get('stocks', ''))
+
+            self.allocation_entry.delete(0, tk.END)
+            self.allocation_entry.insert(0, config.get('allocations', ''))
+
+            self.allocation_type.set(config.get(
+                'allocation_type', 'percentage'))
+
+            self.baseline_entry.delete(0, tk.END)
+            self.baseline_entry.insert(0, config.get('baseline', ''))
+
+            # Convert dates back to datetime objects
+            if 'start_date' in config:
+                start_date = datetime.strptime(
+                    config['start_date'], '%Y-%m-%d').date()
+                self.start_date.set_date(start_date)
+
+            if 'end_date' in config:
+                end_date = datetime.strptime(
+                    config['end_date'], '%Y-%m-%d').date()
+                self.end_date.set_date(end_date)
+
+            messagebox.showinfo(
+                "Success", "Configuration loaded successfully!")
+        except FileNotFoundError:
+            messagebox.showwarning("Warning", "No saved configuration found.")
+        except Exception as e:
+            messagebox.showerror(
+                "Error", f"Failed to load configuration: {str(e)}")
 
     def run_backtest(self):
         try:
             # Initialize weights at the start
             weights = []
-            
+
             start_date = self.start_date.get_date()
             end_date = self.end_date.get_date()
             stocks = [s.strip() for s in self.stock_entry.get().split(',')]
             baseline_stock = self.baseline_entry.get().strip()
             allocation_type = self.allocation_type.get()
-            allocations = [float(a.strip()) for a in self.allocation_entry.get().split(',')]
+            allocations = [float(a.strip())
+                           for a in self.allocation_entry.get().split(',')]
 
             # Verify data is downloaded successfully
-            portfolio_data = yf.download(stocks + [baseline_stock], start=start_date, end=end_date, auto_adjust=False)
+            portfolio_data = yf.download(
+                stocks + [baseline_stock], start=start_date, end=end_date, auto_adjust=False)
             if portfolio_data.empty:
-                messagebox.showerror("Error", "No data available for the selected stocks and date range")
+                messagebox.showerror(
+                    "Error", "No data available for the selected stocks and date range")
                 return
 
             # Verify input data lengths match
             if len(stocks) != len(allocations):
-                messagebox.showerror("Error", "Number of stocks must match number of allocations")
+                messagebox.showerror(
+                    "Error", "Number of stocks must match number of allocations")
                 return
 
             # Fetch stock data first
-            portfolio_data = yf.download(stocks + [baseline_stock], start=start_date, end=end_date, auto_adjust=False)
-            
+            portfolio_data = yf.download(
+                stocks + [baseline_stock], start=start_date, end=end_date, auto_adjust=False)
+
             # Use 'Close' for calculations, but keep 'Adj Close' for total return
             close_data = portfolio_data['Close']
             adj_close_data = portfolio_data['Adj Close']
@@ -170,7 +257,8 @@ class StockBacktestApp:
             # Calculate portfolio value and weights
             if allocation_type == "percentage":
                 if sum(allocations) != 100:
-                    messagebox.showerror("Error", "Percentage allocations must sum to 100%")
+                    messagebox.showerror(
+                        "Error", "Percentage allocations must sum to 100%")
                     return
                 weights = [a / 100 for a in allocations]
                 portfolio_value = pd.Series(0, index=close_data.index)
@@ -185,15 +273,17 @@ class StockBacktestApp:
                     portfolio_value += close_data[stock] * shares
 
             # Calculate returns
-            portfolio_return = sum((adj_close_data[stock].iloc[-1] / adj_close_data[stock].iloc[0] - 1) * weight 
-                                for stock, weight in zip(stocks, weights)) * 100
-            baseline_return = (adj_close_data[baseline_stock].iloc[-1] / adj_close_data[baseline_stock].iloc[0] - 1) * 100
+            portfolio_return = sum((adj_close_data[stock].iloc[-1] / adj_close_data[stock].iloc[0] - 1) * weight
+                                   for stock, weight in zip(stocks, weights)) * 100
+            baseline_return = (
+                adj_close_data[baseline_stock].iloc[-1] / adj_close_data[baseline_stock].iloc[0] - 1) * 100
 
             # Plot results
             self.ax.clear()
-            self.ax.plot(portfolio_value.index, portfolio_value / portfolio_value.iloc[0], label='Portfolio')
-            self.ax.plot(close_data.index, close_data[baseline_stock] / close_data[baseline_stock].iloc[0], 
-                        label=baseline_stock)
+            self.ax.plot(portfolio_value.index, portfolio_value /
+                         portfolio_value.iloc[0], label='Portfolio')
+            self.ax.plot(close_data.index, close_data[baseline_stock] / close_data[baseline_stock].iloc[0],
+                         label=baseline_stock)
             self.ax.set_title('Portfolio Performance vs Baseline')
             self.ax.set_xlabel('Date')
             self.ax.set_ylabel('Normalized Value')
@@ -202,21 +292,25 @@ class StockBacktestApp:
 
             # Display results
             self.results_text.delete('1.0', tk.END)
-            self.results_text.insert(tk.END, f"Portfolio Return: {portfolio_return:.2f}%\n")
-            self.results_text.insert(tk.END, f"Baseline Return ({baseline_stock}): {baseline_return:.2f}%\n")
+            self.results_text.insert(tk.END, f"Portfolio Return: {
+                                     portfolio_return:.2f}%\n")
+            self.results_text.insert(tk.END, f"Baseline Return ({baseline_stock}): {
+                                     baseline_return:.2f}%\n")
 
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
     def on_resize(self, event):
         # Update the figure size when the window is resized
-        self.fig.set_size_inches(event.width/self.fig.dpi, event.height/self.fig.dpi)
+        self.fig.set_size_inches(
+            event.width/self.fig.dpi, event.height/self.fig.dpi)
         self.canvas.draw()
 
     def update_graph(self):
         # Force a redraw of the graph
         self.canvas.draw()
         self.master.update_idletasks()
+
 
 if __name__ == "__main__":
     root = tk.Tk()
@@ -225,10 +319,10 @@ if __name__ == "__main__":
     # Configure the main window to be resizable
     root.protocol("WM_DELETE_WINDOW", app.on_closing)
     root.update_idletasks()
-    
+
     # Make sure window is resizable
     root.resizable(True, True)
-    
+
     # Set minimum window size
     root.minsize(800, 600)
 
