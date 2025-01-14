@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 import sv_ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
 import requests
 
 class StockBacktestApp:
@@ -39,6 +40,17 @@ class StockBacktestApp:
             self.ax.xaxis.label.set_color("white")
             self.ax.yaxis.label.set_color("white")
             self.ax.title.set_color("white")
+            for spine in self.ax.spines.values():
+                spine.set_edgecolor("white")
+        else:
+            self.fig.patch.set_facecolor("white")
+            self.ax.set_facecolor("white")
+            self.ax.tick_params(colors="black")
+            self.ax.xaxis.label.set_color("black")
+            self.ax.yaxis.label.set_color("black")
+            self.ax.title.set_color("black")
+            for spine in self.ax.spines.values():
+                spine.set_edgecolor("black")
         self.canvas.draw()
 
     def on_closing(self):
@@ -49,6 +61,7 @@ class StockBacktestApp:
     def toggle_theme(self):
         new_theme = self.theme_var.get()
         sv_ttk.set_theme(new_theme)
+        self.update_graph_colors()
 
         if new_theme == "dark":
             self.fig.patch.set_facecolor("#2d2d2d")
@@ -117,11 +130,23 @@ class StockBacktestApp:
         graph_frame.grid_rowconfigure(0, weight=1)
         graph_frame.grid_columnconfigure(0, weight=1)
 
-        self.fig, self.ax = plt.subplots(figsize=(8, 4))
-        self.canvas = FigureCanvasTkAgg(self.fig, master=self.master)
+        self.fig, self.ax = plt.subplots(figsize=(10, 6))
+        self.fig.subplots_adjust(bottom=0.15)
+
+        self.canvas = FigureCanvasTkAgg(self.fig, master=graph_frame)
         self.canvas_widget = self.canvas.get_tk_widget()
-        self.canvas_widget.grid(row=6, column=0, columnspan=4, padx=10, pady=10)
+        self.canvas_widget.grid(row=0, column=0, sticky="nsew")
+        
+        # Update figure background for dark mode
+        self.fig.patch.set_facecolor('#2d2d2d')
+        self.ax.set_facecolor('#2d2d2d')
+        
+        # Set up axis colors
+        for spine in self.ax.spines.values():
+            spine.set_color('white')
+
         self.canvas.callbacks.connect("resize_event", self.on_resize)
+
         self.results_text = tk.Text(self.master, height=5, width=80)
         self.results_text.grid(row=7, column=0, columnspan=4, padx=10, pady=10)
 
@@ -240,31 +265,56 @@ class StockBacktestApp:
 
     def update_graph(self):
         self.ax.clear()
-    
+
         portfolio_data = self.portfolio_data
         baseline_data = self.baseline_data
-    
+
         if self.inflation_var.get():
             inflation_data = self.get_inflation_data()
             cumulative_inflation = (1 + inflation_data).cumprod()
             portfolio_data = portfolio_data / cumulative_inflation
             baseline_data = baseline_data / cumulative_inflation
         
-        self.ax.plot(self.dates, portfolio_data, label='Portfolio')
-        self.ax.plot(self.dates, baseline_data, label=self.baseline_entry.get().strip())
+        # Plot the data
+        self.ax.plot(self.dates, portfolio_data, label='Portfolio', color='#3b82f6')  # Bright blue
+        self.ax.plot(self.dates, baseline_data, label=self.baseline_entry.get().strip(), color='#f97316')  # Bright orange
         
-        self.ax.set_title('Portfolio Performance vs Baseline')
-        self.ax.set_xlabel('Date')
-        self.ax.set_ylabel('Normalized Value')
+        # Set title and labels with proper colors
+        self.ax.set_title('Portfolio Performance vs Baseline', color='white', pad=20, fontsize=14)
+        self.ax.set_xlabel('Date', color='white', fontsize=12)
+        self.ax.set_ylabel('Normalized Value', color='white', fontsize=12)
         
+        # Format date axis
+        self.ax.xaxis.set_major_locator(plt.MonthLocator(interval=1))
+        self.ax.xaxis.set_major_formatter(plt.DateFormatter('%Y-%m'))
+        
+        # Rotate and format tick labels
+        plt.setp(self.ax.get_xticklabels(), color='white', fontsize=10)
+        plt.setp(self.ax.get_yticklabels(), color='white', fontsize=10)
+        
+        # Set y-axis scale
         if self.log_scale_var.get():
             self.ax.set_yscale('log')
+            # Ensure log scale labels are properly formatted and colored
+            self.ax.yaxis.set_major_formatter(plt.LogFormatter(labelOnlyBase=False))
+            plt.setp(self.ax.get_yticklabels(), color='white')
         else:
             self.ax.set_yscale('linear')
         
-        self.ax.legend()
+        # Customize grid
+        self.ax.grid(True, linestyle='--', alpha=0.3, color='gray')
+        
+        # Customize legend
+        legend = self.ax.legend(facecolor='#2d2d2d', edgecolor='white')
+        plt.setp(legend.get_texts(), color='white')
+        
+        # Adjust layout to prevent date label cutoff
+        self.fig.tight_layout()
+        
+        # Update canvas
         self.canvas.draw()
         self.master.update_idletasks()
+
 
     def get_inflation_data(self) -> int:
         country = 'united-states'  # You can make this configurable
