@@ -1,6 +1,5 @@
 # Stock-Backtesting
-StockBacktesting enables users to perform historical analysis and backtesting of stock portfolios. This interactive tool allows users to visualize and compare portfolio performance against benchmark stocks
-
+StockBacktesting enables users to perform historical analysis and backtesting of stock portfolios. This tool visualizes investment returns and tracks portfolio metrics against benchmark stocks using real-time data from Yahoo Finance.
 ## Key Features 
 ### Portfolio Analysis 
 - Portfolio construction with multi-stock comparison 
@@ -59,9 +58,10 @@ StockBacktesting enables users to perform historical analysis and backtesting of
  ### Data Retrieval 
  - Ensure valid stock tickers are entered 
  - Verify allocation percentages sum to 100% when using percentage mode 
- -Check that allocation amounts are reasonable in dollar mode 
+ - Check that allocation amounts are reasonable in dollar mode 
  - Some stocks may have limited historical data availability 
- ### Performance - Processing time increases with the number of stocks and longer date ranges 
+ ### Performance 
+ - Processing time increases with the number of stocks and longer date ranges 
  - Large datasets may take longer to fetch and display 
  ### Files 
  - Configuration files may be overwritten when saving new setups 
