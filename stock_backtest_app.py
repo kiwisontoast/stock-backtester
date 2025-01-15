@@ -7,14 +7,26 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 import sv_ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
 import requests
+
 
 class StockBacktestApp:
     def __init__(self, master):
         self.master = master
         self.master.title("Stock Portfolio Backtesting App")
         self.master.geometry("800x1000")
+
+        plt.rcParams.update(
+            {
+                "text.color": "white",
+                "axes.labelcolor": "white",
+                "axes.edgecolor": "white",
+                "xtick.color": "white",
+                "ytick.color": "white",
+                "figure.facecolor": "black",
+                "axes.facecolor": "black",
+            }
+        )
 
         self.current_config = {}
 
@@ -40,17 +52,6 @@ class StockBacktestApp:
             self.ax.xaxis.label.set_color("white")
             self.ax.yaxis.label.set_color("white")
             self.ax.title.set_color("white")
-            for spine in self.ax.spines.values():
-                spine.set_edgecolor("white")
-        else:
-            self.fig.patch.set_facecolor("white")
-            self.ax.set_facecolor("white")
-            self.ax.tick_params(colors="black")
-            self.ax.xaxis.label.set_color("black")
-            self.ax.yaxis.label.set_color("black")
-            self.ax.title.set_color("black")
-            for spine in self.ax.spines.values():
-                spine.set_edgecolor("black")
         self.canvas.draw()
 
     def on_closing(self):
@@ -61,7 +62,6 @@ class StockBacktestApp:
     def toggle_theme(self):
         new_theme = self.theme_var.get()
         sv_ttk.set_theme(new_theme)
-        self.update_graph_colors()
 
         if new_theme == "dark":
             self.fig.patch.set_facecolor("#2d2d2d")
@@ -86,67 +86,107 @@ class StockBacktestApp:
         graph_frame.grid(row=6, column=0, columnspan=4, padx=10, pady=10, sticky="nsew")
         graph_frame.grid_rowconfigure(0, weight=1)
         graph_frame.grid_columnconfigure(0, weight=1)
-        self.start_date = DateEntry(self.master, width=12, background="darkblue", foreground="white", borderwidth=2)
+        self.start_date = DateEntry(
+            self.master,
+            width=12,
+            background="darkblue",
+            foreground="white",
+            borderwidth=2,
+        )
         self.start_date.grid(row=0, column=1, padx=5, pady=5)
 
         ttk.Label(self.master, text="End Date:").grid(row=0, column=2, padx=5, pady=5)
-        self.end_date = DateEntry(self.master, width=12, background="darkblue", foreground="white", borderwidth=2)
+        self.end_date = DateEntry(
+            self.master,
+            width=12,
+            background="darkblue",
+            foreground="white",
+            borderwidth=2,
+        )
         self.end_date.grid(row=0, column=3, padx=5, pady=5)
 
         self.inflation_var = tk.BooleanVar()
         self.log_scale_var = tk.BooleanVar()
-        ttk.Checkbutton(self.master, text="Inflation Adjusted", variable=self.inflation_var, command=self.update_graph).grid(row=8, column=0, columnspan=2, pady=5)
-        ttk.Checkbutton(self.master, text="Logarithmic Scale", variable=self.log_scale_var, command=self.update_graph).grid(row=8, column=2, columnspan=2, pady=5)
+        ttk.Checkbutton(
+            self.master,
+            text="Inflation Adjusted",
+            variable=self.inflation_var,
+            command=self.update_graph,
+        ).grid(row=8, column=0, columnspan=2, pady=5)
+        ttk.Checkbutton(
+            self.master,
+            text="Logarithmic Scale",
+            variable=self.log_scale_var,
+            command=self.update_graph,
+        ).grid(row=8, column=2, columnspan=2, pady=5)
 
-        ttk.Label(self.master, text="Stock Tickers (comma-separated):").grid(row=1, column=0, columnspan=2, padx=5, pady=5)
+        ttk.Label(self.master, text="Stock Tickers (comma-separated):").grid(
+            row=1, column=0, columnspan=2, padx=5, pady=5
+        )
         self.stock_entry = ttk.Entry(self.master, width=30)
         self.stock_entry.grid(row=1, column=2, columnspan=2, padx=5, pady=5)
 
         self.theme_var = tk.StringVar(value="dark")
-        self.theme_switch = ttk.Checkbutton(self.master, text="Dark Mode", style="Switch.TCheckbutton", variable=self.theme_var, onvalue="dark", offvalue="light", command=self.toggle_theme)
+        self.theme_switch = ttk.Checkbutton(
+            self.master,
+            text="Dark Mode",
+            style="Switch.TCheckbutton",
+            variable=self.theme_var,
+            onvalue="dark",
+            offvalue="light",
+            command=self.toggle_theme,
+        )
         self.theme_switch.grid(row=8, column=0, columnspan=4, pady=10)
 
         self.allocation_type = tk.StringVar(value="percentage")
-        ttk.Radiobutton(self.master, text="Percentage", variable=self.allocation_type, value="percentage").grid(row=2, column=0, padx=5, pady=5)
-        ttk.Radiobutton(self.master, text="Dollar Amount", variable=self.allocation_type, value="dollar").grid(row=2, column=1, padx=5, pady=5)
+        ttk.Radiobutton(
+            self.master,
+            text="Percentage",
+            variable=self.allocation_type,
+            value="percentage",
+        ).grid(row=2, column=0, padx=5, pady=5)
+        ttk.Radiobutton(
+            self.master,
+            text="Dollar Amount",
+            variable=self.allocation_type,
+            value="dollar",
+        ).grid(row=2, column=1, padx=5, pady=5)
 
-        ttk.Label(self.master, text="Allocations:").grid(row=3, column=0, padx=5, pady=5)
+        ttk.Label(self.master, text="Allocations:").grid(
+            row=3, column=0, padx=5, pady=5
+        )
         self.allocation_entry = ttk.Entry(self.master, width=30)
         self.allocation_entry.grid(row=3, column=1, columnspan=2, padx=5, pady=5)
 
-        ttk.Label(self.master, text="Baseline Stock:").grid(row=4, column=0, padx=5, pady=5)
+        ttk.Label(self.master, text="Baseline Stock:").grid(
+            row=4, column=0, padx=5, pady=5
+        )
         self.baseline_entry = ttk.Entry(self.master, width=10)
         self.baseline_entry.grid(row=4, column=1, padx=5, pady=5)
 
         button_frame = ttk.Frame(self.master)
         button_frame.grid(row=5, column=0, columnspan=4, pady=5)
 
-        ttk.Button(button_frame, text="Save Configuration", command=self.save_backtest_config).grid(row=0, column=0, padx=5)
-        ttk.Button(button_frame, text="Load Configuration", command=self.load_backtest_config).grid(row=0, column=1, padx=5)
-        ttk.Button(button_frame, text="Run Backtest", command=self.run_backtest).grid(row=0, column=2, padx=5)
+        ttk.Button(
+            button_frame, text="Save Configuration", command=self.save_backtest_config
+        ).grid(row=0, column=0, padx=5)
+        ttk.Button(
+            button_frame, text="Load Configuration", command=self.load_backtest_config
+        ).grid(row=0, column=1, padx=5)
+        ttk.Button(button_frame, text="Run Backtest", command=self.run_backtest).grid(
+            row=0, column=2, padx=5
+        )
 
         graph_frame = ttk.Frame(self.master)
         graph_frame.grid(row=6, column=0, columnspan=4, padx=10, pady=10, sticky="nsew")
         graph_frame.grid_rowconfigure(0, weight=1)
         graph_frame.grid_columnconfigure(0, weight=1)
 
-        self.fig, self.ax = plt.subplots(figsize=(10, 6))
-        self.fig.subplots_adjust(bottom=0.15)
-
-        self.canvas = FigureCanvasTkAgg(self.fig, master=graph_frame)
+        self.fig, self.ax = plt.subplots(figsize=(8, 4))
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.master)
         self.canvas_widget = self.canvas.get_tk_widget()
-        self.canvas_widget.grid(row=0, column=0, sticky="nsew")
-        
-        # Update figure background for dark mode
-        self.fig.patch.set_facecolor('#2d2d2d')
-        self.ax.set_facecolor('#2d2d2d')
-        
-        # Set up axis colors
-        for spine in self.ax.spines.values():
-            spine.set_color('white')
-
+        self.canvas_widget.grid(row=6, column=0, columnspan=4, padx=10, pady=10)
         self.canvas.callbacks.connect("resize_event", self.on_resize)
-
         self.results_text = tk.Text(self.master, height=5, width=80)
         self.results_text.grid(row=7, column=0, columnspan=4, padx=10, pady=10)
 
@@ -207,15 +247,26 @@ class StockBacktestApp:
             stocks = [s.strip() for s in self.stock_entry.get().split(",")]
             baseline_stock = self.baseline_entry.get().strip()
             allocation_type = self.allocation_type.get()
-            allocations = [float(a.strip()) for a in self.allocation_entry.get().split(",")]
+            allocations = [
+                float(a.strip()) for a in self.allocation_entry.get().split(",")
+            ]
 
-            portfolio_data = yf.download(stocks + [baseline_stock], start=start_date, end=end_date, auto_adjust=False)
+            portfolio_data = yf.download(
+                stocks + [baseline_stock],
+                start=start_date,
+                end=end_date,
+                auto_adjust=False,
+            )
             if portfolio_data.empty:
-                messagebox.showerror("Error", "No data available for the selected stocks and date range")
+                messagebox.showerror(
+                    "Error", "No data available for the selected stocks and date range"
+                )
                 return
 
             if len(stocks) != len(allocations):
-                messagebox.showerror("Error", "Number of stocks must match number of allocations")
+                messagebox.showerror(
+                    "Error", "Number of stocks must match number of allocations"
+                )
                 return
 
             close_data = portfolio_data["Close"]
@@ -223,7 +274,9 @@ class StockBacktestApp:
 
             if allocation_type == "percentage":
                 if sum(allocations) != 100:
-                    messagebox.showerror("Error", "Percentage allocations must sum to 100%")
+                    messagebox.showerror(
+                        "Error", "Percentage allocations must sum to 100%"
+                    )
                     return
                 weights = [a / 100 for a in allocations]
                 portfolio_value = pd.Series(0, index=close_data.index)
@@ -237,30 +290,64 @@ class StockBacktestApp:
                     shares = allocation / close_data[stock].iloc[0]
                     portfolio_value += close_data[stock] * shares
 
-            portfolio_return = sum((adj_close_data[stock].iloc[-1] / adj_close_data[stock].iloc[0] - 1) * weight for stock, weight in zip(stocks, weights)) * 100
-            baseline_return = (adj_close_data[baseline_stock].iloc[-1] / adj_close_data[baseline_stock].iloc[0] - 1) * 100
+            portfolio_return = (
+                sum(
+                    (adj_close_data[stock].iloc[-1] / adj_close_data[stock].iloc[0] - 1)
+                    * weight
+                    for stock, weight in zip(stocks, weights)
+                )
+                * 100
+            )
+            baseline_return = (
+                adj_close_data[baseline_stock].iloc[-1]
+                / adj_close_data[baseline_stock].iloc[0]
+                - 1
+            ) * 100
 
             self.portfolio_data = portfolio_value / portfolio_value.iloc[0]
-            self.baseline_data = close_data[baseline_stock] / close_data[baseline_stock].iloc[0]
+            self.baseline_data = (
+                close_data[baseline_stock] / close_data[baseline_stock].iloc[0]
+            )
             self.dates = portfolio_value.index
 
             self.update_graph()
 
             days = (end_date - start_date).days
-            portfolio_annualized_return = ((portfolio_value.iloc[-1] / portfolio_value.iloc[0]) ** (365 / days) - 1) * 100
-            baseline_annualized_return = ((adj_close_data[baseline_stock].iloc[-1] / adj_close_data[baseline_stock].iloc[0]) ** (365 / days) - 1) * 100
+            portfolio_annualized_return = (
+                (portfolio_value.iloc[-1] / portfolio_value.iloc[0]) ** (365 / days) - 1
+            ) * 100
+            baseline_annualized_return = (
+                (
+                    adj_close_data[baseline_stock].iloc[-1]
+                    / adj_close_data[baseline_stock].iloc[0]
+                )
+                ** (365 / days)
+                - 1
+            ) * 100
 
             self.results_text.delete("1.0", tk.END)
-            self.results_text.insert(tk.END, f"Portfolio Return: {portfolio_return:.2f}%\n")
-            self.results_text.insert(tk.END, f"Portfolio Annualized Return: {portfolio_annualized_return:.2f}%\n")
-            self.results_text.insert(tk.END, f"Baseline Return ({baseline_stock}): {baseline_return:.2f}%\n")
-            self.results_text.insert(tk.END, f"Baseline Annualized Return: {baseline_annualized_return:.2f}%\n")
+            self.results_text.insert(
+                tk.END, f"Portfolio Return: {portfolio_return:.2f}%\n"
+            )
+            self.results_text.insert(
+                tk.END,
+                f"Portfolio Annualized Return: {portfolio_annualized_return:.2f}%\n",
+            )
+            self.results_text.insert(
+                tk.END, f"Baseline Return ({baseline_stock}): {baseline_return:.2f}%\n"
+            )
+            self.results_text.insert(
+                tk.END,
+                f"Baseline Annualized Return: {baseline_annualized_return:.2f}%\n",
+            )
 
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
     def on_resize(self, event):
-        self.fig.set_size_inches(event.width / self.fig.dpi, event.height / self.fig.dpi)
+        self.fig.set_size_inches(
+            event.width / self.fig.dpi, event.height / self.fig.dpi
+        )
         self.canvas.draw()
 
     def update_graph(self):
@@ -274,72 +361,47 @@ class StockBacktestApp:
             cumulative_inflation = (1 + inflation_data).cumprod()
             portfolio_data = portfolio_data / cumulative_inflation
             baseline_data = baseline_data / cumulative_inflation
-        
-        # Plot the data
-        self.ax.plot(self.dates, portfolio_data, label='Portfolio', color='#3b82f6')  # Bright blue
-        self.ax.plot(self.dates, baseline_data, label=self.baseline_entry.get().strip(), color='#f97316')  # Bright orange
-        
-        # Set title and labels with proper colors
-        self.ax.set_title('Portfolio Performance vs Baseline', color='white', pad=20, fontsize=14)
-        self.ax.set_xlabel('Date', color='white', fontsize=12)
-        self.ax.set_ylabel('Normalized Value', color='white', fontsize=12)
-        
-        # Format date axis
-        self.ax.xaxis.set_major_locator(plt.MonthLocator(interval=1))
-        self.ax.xaxis.set_major_formatter(plt.DateFormatter('%Y-%m'))
-        
-        # Rotate and format tick labels
-        plt.setp(self.ax.get_xticklabels(), color='white', fontsize=10)
-        plt.setp(self.ax.get_yticklabels(), color='white', fontsize=10)
-        
-        # Set y-axis scale
+
+        self.ax.plot(self.dates, portfolio_data, label="Portfolio")
+        self.ax.plot(self.dates, baseline_data, label=self.baseline_entry.get().strip())
+
+        self.ax.set_title("Portfolio Performance vs Baseline")
+        self.ax.set_xlabel("Date")
+        self.ax.set_ylabel("Normalized Value")
+
         if self.log_scale_var.get():
-            self.ax.set_yscale('log')
-            # Ensure log scale labels are properly formatted and colored
-            self.ax.yaxis.set_major_formatter(plt.LogFormatter(labelOnlyBase=False))
-            plt.setp(self.ax.get_yticklabels(), color='white')
+            self.ax.set_yscale("log")
         else:
-            self.ax.set_yscale('linear')
-        
-        # Customize grid
-        self.ax.grid(True, linestyle='--', alpha=0.3, color='gray')
-        
-        # Customize legend
-        legend = self.ax.legend(facecolor='#2d2d2d', edgecolor='white')
-        plt.setp(legend.get_texts(), color='white')
-        
-        # Adjust layout to prevent date label cutoff
-        self.fig.tight_layout()
-        
-        # Update canvas
+            self.ax.set_yscale("linear")
+
+        self.ax.legend()
         self.canvas.draw()
         self.master.update_idletasks()
 
-
     def get_inflation_data(self) -> int:
-        country = 'united-states'  # You can make this configurable
+        country = "united-states"  # You can make this configurable
         raw_data = self.get_inflation_data(country)
         processed_data = self.process_inflation_data(raw_data)
-        
+
         # Resample to match your stock data frequency and fill missing values
-        resampled_data = processed_data.resample('D').ffill()
-        
+        resampled_data = processed_data.resample("D").ffill()
+
         # Align with your stock data date range
-        aligned_data = resampled_data.loc[self.dates[0]:self.dates[-1]]
-        
+        aligned_data = resampled_data.loc[self.dates[0] : self.dates[-1]]
+
         return aligned_data
 
     def process_inflation_data(inflation_data):
         if not inflation_data:
             return pd.Series()
-        
-        df = pd.DataFrame(inflation_data)
-        df['Date'] = pd.to_datetime(df['Date'])
-        df.set_index('Date', inplace=True)
-        df['InflationRate'] = df['InflationRate'] / 100  # Convert to decimal
-        return df['InflationRate'].sort_index()
 
-    def get_inflation_data(country='united-states'):
+        df = pd.DataFrame(inflation_data)
+        df["Date"] = pd.to_datetime(df["Date"])
+        df.set_index("Date", inplace=True)
+        df["InflationRate"] = df["InflationRate"] / 100  # Convert to decimal
+        return df["InflationRate"].sort_index()
+
+    def get_inflation_data(country="united-states"):
         url = f"https://www.statbureau.org/get-data-json?country={country}"
         try:
             response = requests.get(url)
