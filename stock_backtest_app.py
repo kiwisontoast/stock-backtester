@@ -11,11 +11,22 @@ import requests
 
 
 class StockBacktestApp:
+    """
+    A class representing a stock portfolio backtesting application.
+    """
+
     def __init__(self, master):
+        """
+        Initialize the StockBacktestApp.
+
+        Args:
+            master (tk.Tk): The root window of the application.
+        """
         self.master = master
         self.master.title("Stock Portfolio Backtesting App")
         self.master.geometry("800x1000")
 
+        # Configure matplotlib parameters for dark mode
         plt.rcParams.update(
             {
                 "text.color": "white",
@@ -30,6 +41,7 @@ class StockBacktestApp:
 
         self.current_config = {}
 
+        # Configure grid layout
         self.master.grid_rowconfigure(6, weight=1)
         self.master.grid_columnconfigure(0, weight=1)
         self.master.grid_columnconfigure(1, weight=1)
@@ -39,12 +51,22 @@ class StockBacktestApp:
         self.master.configure(padx=10, pady=10)
         self.master.minsize(800, 1000)
 
+        # Set up window close event
         self.master.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+        # Set initial theme
         sv_ttk.set_theme("dark")
+
+        # Create UI elements
         self.create_widgets()
+
+        # Update graph colors based on initial theme
         self.update_graph_colors()
 
     def update_graph_colors(self):
+        """
+        Update the graph colors based on the current theme.
+        """
         if self.theme_var.get() == "dark":
             self.fig.patch.set_facecolor("#2d2d2d")
             self.ax.set_facecolor("#2d2d2d")
@@ -55,11 +77,17 @@ class StockBacktestApp:
         self.canvas.draw()
 
     def on_closing(self):
+        """
+        Handle the window closing event.
+        """
         plt.close("all")
         self.master.quit()
         self.master.destroy()
 
     def toggle_theme(self):
+        """
+        Toggle between light and dark themes.
+        """
         new_theme = self.theme_var.get()
         sv_ttk.set_theme(new_theme)
 
@@ -81,6 +109,10 @@ class StockBacktestApp:
         self.canvas.draw()
 
     def create_widgets(self):
+        """
+        Create and arrange all UI widgets for the application.
+        """
+        # Create date selection widgets
         ttk.Label(self.master, text="Start Date:").grid(row=0, column=0, padx=5, pady=5)
         graph_frame = ttk.Frame(self.master)
         graph_frame.grid(row=6, column=0, columnspan=4, padx=10, pady=10, sticky="nsew")
@@ -105,14 +137,8 @@ class StockBacktestApp:
         )
         self.end_date.grid(row=0, column=3, padx=5, pady=5)
 
-        self.inflation_var = tk.BooleanVar()
+        # Create logarithmic scale checkbox
         self.log_scale_var = tk.BooleanVar()
-        ttk.Checkbutton(
-            self.master,
-            text="Inflation Adjusted",
-            variable=self.inflation_var,
-            command=self.update_graph,
-        ).grid(row=8, column=0, columnspan=2, pady=5)
         ttk.Checkbutton(
             self.master,
             text="Logarithmic Scale",
@@ -120,12 +146,14 @@ class StockBacktestApp:
             command=self.update_graph,
         ).grid(row=8, column=2, columnspan=2, pady=5)
 
+        # Create stock ticker entry
         ttk.Label(self.master, text="Stock Tickers (comma-separated):").grid(
             row=1, column=0, columnspan=2, padx=5, pady=5
         )
         self.stock_entry = ttk.Entry(self.master, width=30)
         self.stock_entry.grid(row=1, column=2, columnspan=2, padx=5, pady=5)
 
+        # Create theme toggle switch
         self.theme_var = tk.StringVar(value="dark")
         self.theme_switch = ttk.Checkbutton(
             self.master,
@@ -138,6 +166,7 @@ class StockBacktestApp:
         )
         self.theme_switch.grid(row=8, column=0, columnspan=4, pady=10)
 
+        # Create allocation type radio buttons
         self.allocation_type = tk.StringVar(value="percentage")
         ttk.Radiobutton(
             self.master,
@@ -152,21 +181,25 @@ class StockBacktestApp:
             value="dollar",
         ).grid(row=2, column=1, padx=5, pady=5)
 
+        # Create allocation entry
         ttk.Label(self.master, text="Allocations:").grid(
             row=3, column=0, padx=5, pady=5
         )
         self.allocation_entry = ttk.Entry(self.master, width=30)
         self.allocation_entry.grid(row=3, column=1, columnspan=2, padx=5, pady=5)
 
+        # Create baseline stock entry
         ttk.Label(self.master, text="Baseline Stock:").grid(
             row=4, column=0, padx=5, pady=5
         )
         self.baseline_entry = ttk.Entry(self.master, width=10)
         self.baseline_entry.grid(row=4, column=1, padx=5, pady=5)
 
+        # Create button frame
         button_frame = ttk.Frame(self.master)
         button_frame.grid(row=5, column=0, columnspan=4, pady=5)
 
+        # Create buttons
         ttk.Button(
             button_frame, text="Save Configuration", command=self.save_backtest_config
         ).grid(row=0, column=0, padx=5)
@@ -177,20 +210,27 @@ class StockBacktestApp:
             row=0, column=2, padx=5
         )
 
+        # Create graph frame
         graph_frame = ttk.Frame(self.master)
         graph_frame.grid(row=6, column=0, columnspan=4, padx=10, pady=10, sticky="nsew")
         graph_frame.grid_rowconfigure(0, weight=1)
         graph_frame.grid_columnconfigure(0, weight=1)
 
+        # Create matplotlib figure and canvas
         self.fig, self.ax = plt.subplots(figsize=(8, 4))
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.master)
         self.canvas_widget = self.canvas.get_tk_widget()
         self.canvas_widget.grid(row=6, column=0, columnspan=4, padx=10, pady=10)
         self.canvas.callbacks.connect("resize_event", self.on_resize)
+
+        # Create results text widget
         self.results_text = tk.Text(self.master, height=5, width=80)
         self.results_text.grid(row=7, column=0, columnspan=4, padx=10, pady=10)
 
     def save_backtest_config(self):
+        """
+        Save the current backtest configuration to a file.
+        """
         try:
             config = {
                 "stocks": self.stock_entry.get(),
@@ -210,6 +250,9 @@ class StockBacktestApp:
             messagebox.showerror("Error", f"Failed to save configuration: {str(e)}")
 
     def load_backtest_config(self):
+        """
+        Load a previously saved backtest configuration from a file.
+        """
         try:
             config = {}
             with open("backtest_config.txt", "r") as file:
@@ -217,6 +260,7 @@ class StockBacktestApp:
                     key, value = line.strip().split(":", 1)
                     config[key] = value
 
+            # Populate UI elements with loaded configuration
             self.stock_entry.delete(0, tk.END)
             self.stock_entry.insert(0, config.get("stocks", ""))
             self.allocation_entry.delete(0, tk.END)
@@ -240,7 +284,11 @@ class StockBacktestApp:
             messagebox.showerror("Error", f"Failed to load configuration: {str(e)}")
 
     def run_backtest(self):
+        """
+        Run the backtest based on the current configuration and display results.
+        """
         try:
+            # Parse input data
             weights = []
             start_date = self.start_date.get_date()
             end_date = self.end_date.get_date()
@@ -251,6 +299,7 @@ class StockBacktestApp:
                 float(a.strip()) for a in self.allocation_entry.get().split(",")
             ]
 
+            # Download stock data
             portfolio_data = yf.download(
                 stocks + [baseline_stock],
                 start=start_date,
@@ -272,6 +321,7 @@ class StockBacktestApp:
             close_data = portfolio_data["Close"]
             adj_close_data = portfolio_data["Adj Close"]
 
+            # Calculate portfolio value based on allocation type
             if allocation_type == "percentage":
                 if sum(allocations) != 100:
                     messagebox.showerror(
@@ -290,6 +340,7 @@ class StockBacktestApp:
                     shares = allocation / close_data[stock].iloc[0]
                     portfolio_value += close_data[stock] * shares
 
+            # Calculate returns
             portfolio_return = (
                 sum(
                     (adj_close_data[stock].iloc[-1] / adj_close_data[stock].iloc[0] - 1)
@@ -304,18 +355,25 @@ class StockBacktestApp:
                 - 1
             ) * 100
 
+            # Prepare data for plotting
             self.portfolio_data = portfolio_value / portfolio_value.iloc[0]
             self.baseline_data = (
                 close_data[baseline_stock] / close_data[baseline_stock].iloc[0]
             )
             self.dates = portfolio_value.index
 
+            # Update the graph
             self.update_graph()
 
+            # Calculate the number of days between start and end dates
             days = (end_date - start_date).days
+
+            # Calculate the annualized return for the portfolio
             portfolio_annualized_return = (
                 (portfolio_value.iloc[-1] / portfolio_value.iloc[0]) ** (365 / days) - 1
             ) * 100
+
+            # Calculate the annualized return for the baseline stock
             baseline_annualized_return = (
                 (
                     adj_close_data[baseline_stock].iloc[-1]
@@ -325,88 +383,78 @@ class StockBacktestApp:
                 - 1
             ) * 100
 
+            # Clear the results text widget
             self.results_text.delete("1.0", tk.END)
+
+            # Insert the portfolio return
             self.results_text.insert(
                 tk.END, f"Portfolio Return: {portfolio_return:.2f}%\n"
             )
+
+            # Insert the portfolio annualized return
             self.results_text.insert(
                 tk.END,
                 f"Portfolio Annualized Return: {portfolio_annualized_return:.2f}%\n",
             )
+
+            # Insert the baseline return
             self.results_text.insert(
                 tk.END, f"Baseline Return ({baseline_stock}): {baseline_return:.2f}%\n"
             )
+
+            # Insert the baseline annualized return
             self.results_text.insert(
                 tk.END,
                 f"Baseline Annualized Return: {baseline_annualized_return:.2f}%\n",
             )
 
+            # Exception handling for the entire run_backtest method
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
     def on_resize(self, event):
+        """
+        Adjust the figure size when the window is resized.
+
+        Args:
+            event: The resize event object
+        """
         self.fig.set_size_inches(
             event.width / self.fig.dpi, event.height / self.fig.dpi
         )
         self.canvas.draw()
 
     def update_graph(self):
+        """
+        Update the graph with the latest portfolio and baseline data.
+        """
+        # Clear the current plot
         self.ax.clear()
 
+        # Get the portfolio and baseline data
         portfolio_data = self.portfolio_data
         baseline_data = self.baseline_data
 
-        if self.inflation_var.get():
-            inflation_data = self.get_inflation_data()
-            cumulative_inflation = (1 + inflation_data).cumprod()
-            portfolio_data = portfolio_data / cumulative_inflation
-            baseline_data = baseline_data / cumulative_inflation
-
+        # Plot the portfolio and baseline data
         self.ax.plot(self.dates, portfolio_data, label="Portfolio")
         self.ax.plot(self.dates, baseline_data, label=self.baseline_entry.get().strip())
 
+        # Set the graph title and labels
         self.ax.set_title("Portfolio Performance vs Baseline")
         self.ax.set_xlabel("Date")
         self.ax.set_ylabel("Normalized Value")
 
+        # Set the y-axis scale based on the logarithmic scale checkbox
         if self.log_scale_var.get():
             self.ax.set_yscale("log")
         else:
             self.ax.set_yscale("linear")
 
+        # Add a legend to the graph
         self.ax.legend()
+
+        # Redraw the canvas
         self.canvas.draw()
+
+        # Update the tkinter window
         self.master.update_idletasks()
-
-    def get_inflation_data(self) -> int:
-        country = "united-states"  # You can make this configurable
-        raw_data = self.get_inflation_data(country)
-        processed_data = self.process_inflation_data(raw_data)
-
-        # Resample to match your stock data frequency and fill missing values
-        resampled_data = processed_data.resample("D").ffill()
-
-        # Align with your stock data date range
-        aligned_data = resampled_data.loc[self.dates[0] : self.dates[-1]]
-
-        return aligned_data
-
-    def process_inflation_data(inflation_data):
-        if not inflation_data:
-            return pd.Series()
-
-        df = pd.DataFrame(inflation_data)
-        df["Date"] = pd.to_datetime(df["Date"])
-        df.set_index("Date", inplace=True)
-        df["InflationRate"] = df["InflationRate"] / 100  # Convert to decimal
-        return df["InflationRate"].sort_index()
-
-    def get_inflation_data(country="united-states"):
-        url = f"https://www.statbureau.org/get-data-json?country={country}"
-        try:
-            response = requests.get(url)
-            response.raise_for_status()
-            return response.json()
-        except requests.RequestException as e:
-            print(f"Error fetching inflation data: {e}")
-            return None
