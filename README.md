@@ -1,5 +1,5 @@
 # Stock-Backtesting
-StockBacktesting enables users to perform historical analysis and backtesting of stock portfolios. This tool visualizes investment returns and tracks portfolio metrics against benchmark stocks using real-time data from Yahoo Finance.
+Stock back tester is a mathematical analysis tool that enables users to test sample portfolios' performance against historical market returns. This tool visualizes investment returns and tracks portfolio metrics against benchmark stocks using real-time data from Yahoo Finance. Allows for analysis using portfolios based on percentage and dollar amounts.
 ## Key Features 
 ### Portfolio Analysis 
 - Portfolio construction with multi-stock comparison 
