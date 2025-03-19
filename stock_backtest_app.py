@@ -299,17 +299,30 @@ class StockBacktestApp:
                 float(a.strip()) for a in self.allocation_entry.get().split(",")
             ]
 
+            if not stocks:
+                messagebox.showerror("Error", "Please enter at least one stock ticker.")
+                return
+
+            if start_date >= end_date:
+                messagebox.showerror("Error", "Start date must be before end date.")
+                return
+
             # Download stock data
-            portfolio_data = yf.download(
-                stocks + [baseline_stock],
-                start=start_date,
-                end=end_date,
-                auto_adjust=False,
-            )
-            if portfolio_data.empty:
-                messagebox.showerror(
-                    "Error", "No data available for the selected stocks and date range"
+            try:
+                portfolio_data = yf.download(
+                    stocks + [baseline_stock],
+                    start=start_date,
+                    end=end_date,
+                    auto_adjust=False,
                 )
+                if portfolio_data.empty:
+                    messagebox.showerror(
+                        "Error",
+                        "No data available for the selected stocks and date range",
+                    )
+                    return
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to download data: {str(e)}")
                 return
 
             if len(stocks) != len(allocations):
