@@ -67,4 +67,4 @@ Stock back tester is a mathematical analysis tool that enables users to test sam
  - Configuration files may be overwritten when saving new setups 
  
  ## Authors 
- Dev Shroff & Krishnika Anandan
+ Dev Shroff
